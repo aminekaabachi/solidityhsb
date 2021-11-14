@@ -11,17 +11,33 @@ import Stack from "@mui/material/Stack";
 import Chip from "@mui/material/Chip";
 import * as Icon from "react-cryptocoins";
 
+import Table from '@mui/material/Table';
+import TableBody from '@mui/material/TableBody';
+import TableCell from '@mui/material/TableCell';
+import TableContainer from '@mui/material/TableContainer';
+import TableHead from '@mui/material/TableHead';
+import TableRow from '@mui/material/TableRow';
+import Paper from '@mui/material/Paper';
+import Divider from '@mui/material/Divider';
+
+import { Typography } from '@mui/material';
+
 import "./App.css";
 
 class App extends Component {
   state = {
+    //web3 components
     web3: null,
     accounts: null,
     contract: null,
+    //history
+    history: [],
+    //current update
     url: "",
     price: 0,
     owner: null,
     gasprice: 0,
+    //new update
     newUrl: "",
     newPrice: 0,
   };
@@ -48,12 +64,14 @@ class App extends Component {
 
   init = async () => {
     const { web3, contract } = this.state;
-    const url = await contract.methods.getURL().call();
-    const price = await contract.methods.getPrice().call();
-    const owner = await contract.methods.getOwner().call();
-    const gasprice = await contract.methods.getGasPrice().call();
+
+    //Getting the current update
+
+    const { url, price, owner, gasprice } = await contract.methods.getCurrent().call();
+    const history = await contract.methods.getHistory().call();
 
     this.setState({
+      history,
       url,
       price: price ? web3.utils.fromWei(price, "ether") : 0,
       owner,
@@ -91,6 +109,11 @@ class App extends Component {
     }
     return (
       <div className="App">
+
+      <Typography variant="h1" component="h2">
+        TheCryptoLink
+      </Typography>
+
         <div className="change">
           <FormControl
             size="small"
@@ -131,8 +154,9 @@ class App extends Component {
             Update
           </Button>
         </div>
-        <LinkPreview url={this.state.url} width="400px" />
-        <Stack direction="row" spacing={1} sx={{ m: 2 }}>
+        <Divider />
+
+        {/* <Stack direction="row" spacing={1} sx={{ m: 5 }}>
           <Chip
             label={"PRICE: " + this.state.price + ""}
             icon={<Icon.EthAlt size={18} />}
@@ -143,6 +167,40 @@ class App extends Component {
             icon={<Icon.EthAlt size={18} />}
           />
         </Stack>
+        <Divider /> */}
+
+        <LinkPreview url={this.state.url} width="400px" />
+        <Divider />
+
+        <div>
+        <TableContainer component={Paper} sx={{ m: 5 }} >
+      <Table sx={{ minWidth: 650 }} size="small" aria-label="a dense table">
+        <TableHead>
+          <TableRow>
+            <TableCell>Buyer</TableCell>
+            <TableCell align="right">URL</TableCell>
+            <TableCell align="right">Price&nbsp;<Icon.EthAlt size={18} /></TableCell>
+            <TableCell align="right">Gasprice&nbsp;<Icon.EthAlt size={18} /></TableCell>
+          </TableRow>
+        </TableHead>
+        <TableBody>
+          {this.state.history.reverse().map((row, i) => (
+            <TableRow
+              key={i}
+              sx={{ '&:last-child td, &:last-child th': { border: 0 } }}
+            >
+              <TableCell component="th" scope="row">
+                {row.owner}
+              </TableCell>
+              <TableCell align="right">{row.url}</TableCell>
+              <TableCell align="right">{ this.state.web3.utils.fromWei(row.price, "ether") }</TableCell>
+              <TableCell align="right">{ this.state.web3.utils.fromWei(row.gasprice, "ether") }</TableCell>
+            </TableRow>
+          ))}
+        </TableBody>
+      </Table>
+    </TableContainer>
+        </div>
       </div>
     );
   }

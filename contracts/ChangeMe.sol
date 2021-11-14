@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity >=0.4.21 <0.7.0;
+pragma solidity >=0.4.21;
 pragma experimental ABIEncoderV2;
 
 contract ChangeMe {
@@ -12,39 +12,33 @@ contract ChangeMe {
         uint256 gasprice;
     }
 
-    Update public state;
+    Update[] public updates;
 
     event UpdateURL(string url, uint256 price, address owner);
 
     constructor() public {
-        state = Update("https://ethereum.org/en/", tx.origin, 0, tx.gasprice);
+        Update memory state = Update("https://ethereum.org/en/", tx.origin, 0, tx.gasprice);
+        updates.push(state);
         emit UpdateURL(state.url, state.price, state.owner);
         contractOwner = tx.origin;
     }
 
     function set(string memory newURL) public payable {
+        Update memory state = updates[updates.length - 1];
         if (msg.value > state.price) {
             contractOwner.transfer(msg.value);
-            state = Update(newURL, tx.origin, msg.value, tx.gasprice);
+            updates.push(Update(newURL, tx.origin, msg.value, msg.gas));
             emit UpdateURL(state.url, state.price, state.owner);
         } else {
-            revert();
+            revert('Not enough offer for price');
         }
     }
 
-    function getURL() public view returns (string memory url) {
-        return state.url;
+    function getCurrent() public view returns (Update memory) {
+       return updates[updates.length - 1];
     }
 
-    function getPrice() public view returns (uint256 price) {
-        return state.price;
-    }
-
-    function getOwner() public view returns (address owner) {
-        return state.owner;
-    }
-
-    function getGasPrice() public view returns (uint256 gasprice) {
-        return state.gasprice;
+    function getHistory() public view returns (Update[] memory) {
+       return updates;
     }
 }
